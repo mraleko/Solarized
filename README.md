@@ -2,6 +2,12 @@
 
 A solar panel placement tool that finds optimal locations within a given radius.
 
+## Screenshots
+
+| Phoenix, AZ (High Solar) | Denver, CO (Mountain Terrain) |
+|--------------------------|-------------------------------|
+| ![Phoenix](./screenshots/phoenix.png) | ![Denver](./screenshots/denver.png) |
+
 ## Usage
 
 ```bash

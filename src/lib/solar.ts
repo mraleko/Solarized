@@ -64,28 +64,38 @@ function calculateShadingPenalty(
 
 function generateGridPoints(center: Coordinates, radiusKm: number): Coordinates[] {
     const points: Coordinates[] = []
-    const count = Math.min(100, Math.max(50, Math.round(radiusKm * radiusKm * 2)))
+    // Fixed spacing of 0.5 km between grid points
+    const spacing = 0.5
 
-    const seed = Math.floor(center.lat * 1000 + center.lng * 100 + radiusKm)
-    let rng = seed >>> 0
-    const random = () => {
-        rng = (rng * 1664525 + 1013904223) % 4294967296
-        return rng / 4294967296
-    }
+    const latKm = 111
+    const lngKm = 111 * Math.cos(center.lat * DEG_TO_RAD)
 
-    for (let i = 0; i < count; i++) {
-        const r = radiusKm * Math.sqrt(random())
-        const theta = 2 * Math.PI * random()
-        const x = r * Math.cos(theta)
-        const y = r * Math.sin(theta)
+    // Generate hexagonal grid
+    const latStep = spacing / latKm
+    const lngStep = spacing / lngKm
+    const rowHeight = latStep * Math.sqrt(3) / 2
 
-        const latKm = 111
-        const lngKm = 111 * Math.cos(center.lat * DEG_TO_RAD)
+    const maxOffset = radiusKm / latKm + latStep
 
-        points.push({
-            lat: center.lat + y / latKm,
-            lng: center.lng + x / lngKm
-        })
+    let row = 0
+    for (let latOffset = -maxOffset; latOffset <= maxOffset; latOffset += rowHeight) {
+        const lngOffset = (row % 2) * (lngStep / 2)
+        const maxLngOffset = radiusKm / lngKm + lngStep
+
+        for (let lng = -maxLngOffset + lngOffset; lng <= maxLngOffset; lng += lngStep) {
+            const lat = center.lat + latOffset
+            const lngCoord = center.lng + lng
+
+            // Check if point is within radius
+            const distLat = latOffset * latKm
+            const distLng = lng * lngKm
+            const dist = Math.sqrt(distLat * distLat + distLng * distLng)
+
+            if (dist <= radiusKm) {
+                points.push({ lat, lng: lngCoord })
+            }
+        }
+        row++
     }
 
     return points
@@ -156,7 +166,7 @@ export async function analyzeSolarPotential(
     candidates.sort((a, b) => b.score - a.score)
 
     const results: SolarResult[] = []
-    const minSpacing = 0.3
+    const minSpacing = 0.5
 
     for (const candidate of candidates) {
         if (results.length >= 5) break
